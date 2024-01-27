@@ -30,6 +30,14 @@ int strLen(const char* S) {
     return count;
 }
 
+void insertChar(char* S, int pos, char c) {
+    int len = strLen(S);
+    for (int i = len; i >= pos; i--) {
+        S[i + 1] = S[i];
+    }
+    S[pos] = c;
+}
+
 bool isSeparator(char C) {
     return 0 <= C && C <= 32;
 }
@@ -61,22 +69,6 @@ int getWordPosition(const char* s, int numOfWord) {
     return -1;
 }
 
-//int getWordPosition(char* s, int numOfWord) {
-//    int count = 0;
-//    int len = strLen(s);
-//    char S[20000] = " ";
-//    strcat(S, s);
-//    for (int i = 1; i < len; i++) {
-//        if (isSeparator(S[i-1]) && !isSeparator(S[i])) {
-//            if (count == numOfWord) {
-//                return i - 1;
-//            }
-//            count++;
-//        }
-//    }
-//    return -1;
-//}
-
 int getWordLength(const char* S, int numOfWord) {
     int pos = getWordPosition(S, numOfWord);
     if (pos == -1) return 0;
@@ -105,6 +97,25 @@ void getWord(const char* S, int numOfWord, char* word) {
     word[len] = 0;
 }
 
+void makeRightWidth(char* S, int desiredWidth) {
+    int len = strLen(S);
+    while (len < desiredWidth) {
+        int old_len = len;
+        for (int i = len - 2; i >= 0; i--) {
+            if (!isSeparator(S[i]) && isSeparator(S[i + 1])) {
+                insertChar(S, i + 1, ' ');
+                len++;
+                if (len == desiredWidth) {
+                    break;
+                }
+            }
+        }
+        if (len == old_len) {
+            break;
+        }
+    }
+}
+
 int main(int argc, char* argv[])
 {
     system("chcp 1251>>nul");
@@ -112,10 +123,10 @@ int main(int argc, char* argv[])
 
     char FileName[300];
     strcpy(FileName, argv[1]);
-    int width = atoi(argv[2]);// ширина колонки яку ми робимо
+    int width = atoi(argv[2]);//ширина колонки яку  ми  робимо
     int indent = atoi(argv[3]);//показує скільки пропусків в першому рядку абзаца
-    showTextFile(FileName);
-    
+    //showTextFile(FileName);
+
     FILE* F = fopen(FileName, "rt");
     if (!F) {
         cout << "ERROR: File not found!: " << FileName << endl;
@@ -131,41 +142,68 @@ int main(int argc, char* argv[])
 
     char s[20000];
     while (fgets(s, sizeof(s), F)) {
-        /*int N = strLen(s);
-        cout << "N= " << N << endl;*/
-        int n = getWordsCount(s);
-        cout << "n= " << n << endl;
-       
-        char resultLine[300] = "";
+        char resultLine[3000] = "";
         for (int i = 0; i < indent; i++) {
             resultLine[i] = ' ';
         }
+        int Len = indent;
         resultLine[indent] = 0;
 
-        int Len = indent;
+        int n = getWordsCount(s);
+        //cout << "n= " << n << endl;
+
+        int cnt = 0;
         for (int i = 0; i < n; i++) {
             char word[300];
             getWord(s, i, word);
             //cout << i << ". " << word << endl;
             int len = strLen(word);
-            if (i>0) len++;
 
-            if (Len + len <= width) {
-                if (i>0) strcat(resultLine, " ");
-                strcat(resultLine, word);
-                Len += len;
+            if (cnt == 0) {
+                if (Len + len <= width) {
+                    strcat(resultLine, word);
+                    Len = Len + len;
+                    cnt++;
+                }
+                else {
+                    makeRightWidth(resultLine, width);
+                    fputs(resultLine, G);
+                    fputs("\n", G);
+                    resultLine[0] = 0;
+                    strcat(resultLine, word);
+                    //strcat(resultLine, " ");
+                    Len = len;//+1;
+                    cnt = 1;
+                }
             }
-            else {
-                strcat(resultLine, "\n");
-                fputs(resultLine, G);
-                cout << resultLine;
-                resultLine[0] = 0;
-                strcat(resultLine, word);
-                Len = len;
+            else
+            {
+                if (Len + len + 1 <= width) {
+                    strcat(resultLine, " ");
+                    strcat(resultLine, word);
+                    Len = Len + len + 1;
+                    cnt++;
+                }
+                else {
+                    makeRightWidth(resultLine, width);
+                    fputs(resultLine, G);
+                    fputs("\n", G);
+                    resultLine[0] = 0;
+                    strcat(resultLine, word);
+                    //strcat(resultLine, " ");
+                    Len = len;//+1;
+                    cnt = 1;
+                }
+            }
+            if (i == n - 1 && cnt == 0) {
+                fputs(word, G);
+                fputs("\n", G);
             }
         }
         fputs(resultLine, G);
-        cout << "----------" << endl;
+        fputs("\n", G);
+
+        //cout << "----------" << endl;
     }
     fclose(F);
     fclose(G);
@@ -173,3 +211,4 @@ int main(int argc, char* argv[])
 
     return 0;
 }
+
